@@ -1,0 +1,18 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  url: <%= ENV.fetch("DATABASE_URL") { "postgres://teamsync:teamsync_password@localhost:5432/teamsync_development" } %>
+
+test:
+  <<: *default
+  url: <%= ENV.fetch("DATABASE_URL") { "postgres://teamsync:teamsync_password@localhost:5432/teamsync_test" } %>
+
+production:
+  <<: *default
+  url: <%= ENV.fetch("DATABASE_URL") %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 10 } %>
+  prepared_statements: false
