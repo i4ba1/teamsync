@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -13,39 +13,45 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated, isLoading, fetchUser } = useAuthStore();
+  const { isAuthenticated, fetchUser } = useAuthStore();
+  const [checked, setChecked] = useState(false);
 
+  // Resolve the session before deciding whether to render or redirect. Without
+  // this, the persisted auth state has not rehydrated yet on a full page load
+  // and the guard would bounce an authenticated user to /login.
   useEffect(() => {
-    fetchUser();
+    let active = true;
+
+    fetchUser().finally(() => {
+      if (active) setChecked(true);
+    });
+
+    return () => {
+      active = false;
+    };
   }, [fetchUser]);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (checked && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [checked, isAuthenticated, router]);
 
-  if (isLoading) {
+  if (!checked || !isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+      <div className="flex min-h-screen items-center justify-center bg-slate-950">
         <Loader2 className="h-8 w-8 animate-spin text-white" />
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    return null;
   }
 
   return (
     <div className="min-h-screen bg-slate-950">
       <div className="flex h-screen">
         <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden">
           <Header />
-          <main className="flex-1 overflow-y-auto p-6">
-            {children}
-          </main>
+          <main className="flex-1 overflow-y-auto p-6">{children}</main>
         </div>
       </div>
     </div>

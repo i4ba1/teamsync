@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="620" viewBox="0 0 1040 620" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+    <marker id="arrow-sky" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8"/>
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#fbbf24"/>
+    </marker>
+  </defs>
+
+  <rect width="1040" height="620" fill="#0b1220"/>
+  <text x="40" y="52" fill="#e2e8f0" font-size="26" font-weight="700">TeamSync — Backend request lifecycle</text>
+  <text x="40" y="80" fill="#94a3b8" font-size="15">Controller → Service → Repository, with contracts, errors, jobs and real-time broadcasts</text>
+
+  <g>
+    <rect x="40" y="130" width="180" height="110" rx="12" fill="#111c2e" stroke="#1f2f47"/>
+    <text x="130" y="175" fill="#e2e8f0" font-size="17" font-weight="600" text-anchor="middle">Client</text>
+    <text x="130" y="200" fill="#94a3b8" font-size="13" text-anchor="middle">Next.js / HTTP</text>
+    <text x="130" y="220" fill="#94a3b8" font-size="13" text-anchor="middle">PASETO bearer</text>
+  </g>
+
+  <g>
+    <rect x="272" y="130" width="180" height="110" rx="12" fill="#0e2233" stroke="#38bdf8" stroke-width="2"/>
+    <text x="362" y="170" fill="#7dd3fc" font-size="17" font-weight="700" text-anchor="middle">Controller</text>
+    <text x="362" y="196" fill="#94a3b8" font-size="12.5" text-anchor="middle">filters, permit,</text>
+    <text x="362" y="214" fill="#94a3b8" font-size="12.5" text-anchor="middle">delegate, render</text>
+  </g>
+
+  <g>
+    <rect x="504" y="130" width="180" height="110" rx="12" fill="#0e2233" stroke="#38bdf8" stroke-width="2"/>
+    <text x="594" y="170" fill="#7dd3fc" font-size="17" font-weight="700" text-anchor="middle">Service</text>
+    <text x="594" y="196" fill="#94a3b8" font-size="12.5" text-anchor="middle">one use case,</text>
+    <text x="594" y="214" fill="#94a3b8" font-size="12.5" text-anchor="middle">orchestration</text>
+  </g>
+
+  <g>
+    <rect x="736" y="130" width="180" height="110" rx="12" fill="#0e2233" stroke="#38bdf8" stroke-width="2"/>
+    <text x="826" y="170" fill="#7dd3fc" font-size="17" font-weight="700" text-anchor="middle">Repository</text>
+    <text x="826" y="196" fill="#94a3b8" font-size="12.5" text-anchor="middle">queries &amp;</text>
+    <text x="826" y="214" fill="#94a3b8" font-size="12.5" text-anchor="middle">persistence</text>
+  </g>
+
+  <g>
+    <rect x="826" y="300" width="180" height="100" rx="12" fill="#0b1f17" stroke="#34d399" stroke-width="2"/>
+    <text x="916" y="342" fill="#6ee7b7" font-size="16" font-weight="700" text-anchor="middle">PostgreSQL</text>
+    <text x="916" y="366" fill="#94a3b8" font-size="12.5" text-anchor="middle">UUID records</text>
+  </g>
+
+  <line x1="220" y1="185" x2="268" y2="185" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#arrow-sky)"/>
+  <line x1="452" y1="185" x2="500" y2="185" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#arrow-sky)"/>
+  <line x1="684" y1="185" x2="732" y2="185" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#arrow-sky)"/>
+  <line x1="826" y1="240" x2="826" y2="296" stroke="#34d399" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <text x="760" y="275" fill="#94a3b8" font-size="12">ActiveRecord</text>
+
+  <g>
+    <rect x="504" y="300" width="180" height="72" rx="12" fill="#241a0b" stroke="#fbbf24"/>
+    <text x="594" y="330" fill="#fcd34d" font-size="15" font-weight="700" text-anchor="middle">Contract</text>
+    <text x="594" y="352" fill="#b8a06a" font-size="12" text-anchor="middle">dry-validation input</text>
+  </g>
+  <line x1="594" y1="240" x2="594" y2="296" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrow-amber)"/>
+
+  <g>
+    <rect x="272" y="300" width="180" height="72" rx="12" fill="#2a1113" stroke="#f87171"/>
+    <text x="362" y="330" fill="#fca5a5" font-size="15" font-weight="700" text-anchor="middle">Errors::*</text>
+    <text x="362" y="352" fill="#b88a8a" font-size="12" text-anchor="middle">rescued → HTTP status</text>
+  </g>
+  <path d="M 504 336 C 460 336, 450 336, 456 336" fill="none" stroke="#f87171" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 272 336 C 220 336, 250 300, 272 250" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="40" y="300" width="180" height="100" rx="12" fill="#1b1430" stroke="#a78bfa"/>
+    <text x="130" y="338" fill="#c4b5fd" font-size="15" font-weight="700" text-anchor="middle">Sidekiq Job</text>
+    <text x="130" y="360" fill="#94a3b8" font-size="12" text-anchor="middle">reminders, missed,</text>
+    <text x="130" y="378" fill="#94a3b8" font-size="12" text-anchor="middle">summaries, cleanup</text>
+  </g>
+  <path d="M 220 340 C 330 340, 400 300, 504 200" fill="none" stroke="#a78bfa" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="272" y="430" width="644" height="120" rx="12" fill="#101a2b" stroke="#334155"/>
+    <text x="312" y="466" fill="#e2e8f0" font-size="16" font-weight="700">Action Cable broadcasts</text>
+    <text x="312" y="494" fill="#94a3b8" font-size="13">StandupChannel — standup created / updated / reminders</text>
+    <text x="312" y="516" fill="#94a3b8" font-size="13">NotificationChannel — per-user notifications + unread count</text>
+    <text x="312" y="538" fill="#94a3b8" font-size="13">PresenceChannel — online/offline presence (Redis)</text>
+  </g>
+
+  <g font-size="12.5">
+    <line x1="40" y1="590" x2="76" y2="590" stroke="#38bdf8" stroke-width="3"/>
+    <text x="84" y="594" fill="#94a3b8">request flow</text>
+    <line x1="200" y1="590" x2="236" y2="590" stroke="#a78bfa" stroke-width="3" stroke-dasharray="5 4"/>
+    <text x="244" y="594" fill="#94a3b8">async job invokes a service</text>
+    <line x1="440" y1="590" x2="476" y2="590" stroke="#f87171" stroke-width="3" stroke-dasharray="5 4"/>
+    <text x="484" y="594" fill="#94a3b8">exceptions rescued in ApplicationController</text>
+  </g>
+</svg>

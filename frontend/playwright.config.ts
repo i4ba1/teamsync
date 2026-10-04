@@ -8,6 +8,7 @@ const useManagedServer = process.env.PLAYWRIGHT_NO_SERVER !== "1";
 
 export default defineConfig({
   testDir: "./e2e",
+  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR || "test-results",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

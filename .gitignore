@@ -1,0 +1,21 @@
+# Superpowers scratch workspaces (ledgers, briefs, review packages)
+.superpowers/
+
+# Playwright artifacts (videos, traces, reports)
+.playwright-output/
+playwright-report/
+test-results/
+
+# Node
+node_modules/
+.next/
+npm-debug.log*
+
+# OS/editor
+.DS_Store
+*.swp
+
+# Env
+.env
+.env.local
+.env.*.local

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StandupStatusBadge } from '@/components/standups/standup-status-badge';
 import { useTeamStore } from '@/stores/team-store';
 import { useStandups } from '@/hooks/use-standups';
+import { useTeams } from '@/hooks/use-teams';
 import { formatDate } from '@/lib/utils';
 
 const STATUS_OPTIONS = [
@@ -18,8 +19,15 @@ const STATUS_OPTIONS = [
 ];
 
 export default function HistoryPage() {
-  const { currentTeam } = useTeamStore();
+  const { currentTeam, setCurrentTeam } = useTeamStore();
+  const { data: teams } = useTeams();
   const [status, setStatus] = useState('all');
+
+  useEffect(() => {
+    if (!currentTeam && teams && teams.length > 0) {
+      setCurrentTeam(teams[0]);
+    }
+  }, [currentTeam, teams, setCurrentTeam]);
 
   const params = status === 'all' ? undefined : { status };
   const { data, isLoading } = useStandups(currentTeam?.slug || '', params);

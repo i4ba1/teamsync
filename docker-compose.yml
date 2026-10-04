@@ -72,11 +72,16 @@ services:
       APP_URL: http://localhost:3001
       PLAYWRIGHT_NO_SERVER: "1"
       CI: "1"
+      CAPTURE_DIR: /work/output
+      PLAYWRIGHT_OUTPUT_DIR: /work/test-results
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     volumes:
+      - ./frontend/node_modules:/work/frontend/node_modules:ro
       - ./frontend/e2e:/work/frontend/e2e
       - ./frontend/playwright.config.ts:/work/frontend/playwright.config.ts
       - ./frontend/tsconfig.json:/work/frontend/tsconfig.json
-      - ./docs/assets:/work/docs/assets
+      - ./docs/assets:/work/output
+      - ./.playwright-output:/work/test-results
     depends_on:
       - web
       - api
