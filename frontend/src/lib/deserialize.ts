@@ -36,18 +36,37 @@ export function underscoreKeys(attributes: Record<string, unknown>): Record<stri
   return result;
 }
 
-function camelizeAttributes(attributes?: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(attributes ?? {})) {
-    result[camelize(key)] = value;
+function camelizeValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(camelizeValue);
   }
-  return result;
+  if (value !== null && typeof value === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+      result[camelize(key)] = camelizeValue(nested);
+    }
+    return result;
+  }
+  return value;
+}
+
+function camelizeAttributes(attributes?: Record<string, unknown>): Record<string, unknown> {
+  return camelizeValue(attributes ?? {}) as Record<string, unknown>;
 }
 
 function buildIncludedMap(included: JsonApiResource[] = []): Map<string, unknown> {
-  const map = new Map<string, unknown>();
+  const raw = new Map<string, JsonApiResource>();
   for (const resource of included) {
-    map.set(keyFor(resource.type, resource.id), deserializeResource(resource, new Map()));
+    raw.set(keyFor(resource.type, resource.id), resource);
+  }
+
+  // Two passes so relationships between included resources also resolve.
+  const map = new Map<string, unknown>();
+  for (const [key, resource] of raw) {
+    map.set(key, { id: resource.id, ...camelizeAttributes(resource.attributes) });
+  }
+  for (const [key, resource] of raw) {
+    map.set(key, deserializeResource(resource, map));
   }
   return map;
 }
@@ -88,7 +107,7 @@ export function deserializeCollection(doc: JsonApiDoc<JsonApiResource[]>): Recor
 
 function camelizeMeta(meta?: Record<string, unknown>): Record<string, unknown> | undefined {
   if (!meta) return undefined;
-  return camelizeAttributes(meta);
+  return camelizeValue(meta) as Record<string, unknown>;
 }
 
 export function deserializeDoc(

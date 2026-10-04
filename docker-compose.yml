@@ -2,8 +2,9 @@ x-backend-environment: &backend-environment
   RAILS_ENV: development
   DATABASE_URL: postgres://teamsync:teamsync_password@db:5432/teamsync_development
   REDIS_URL: redis://redis:6379/0
-  PASETO_SECRET_KEY: ${PASETO_SECRET_KEY:-teamsync-dev-secret-key-0123456789-abcdef}
-  SECRET_KEY_BASE: ${SECRET_KEY_BASE:-teamsync-dev-secret-key-base-0123456789}
+  PASETO_SECRET_KEY: ${PASETO_SECRET_KEY:?Set PASETO_SECRET_KEY in .env (see .env.example)}
+  SECRET_KEY_BASE: ${SECRET_KEY_BASE:?Set SECRET_KEY_BASE in .env (see .env.example)}
+  RAILS_MASTER_KEY: ${RAILS_MASTER_KEY:?Set RAILS_MASTER_KEY in .env (see .env.example)}
   FRONTEND_URL: http://localhost:3001
   ACTION_CABLE_ALLOWED_REQUEST_ORIGINS: http://localhost:3001,http://localhost:3000
 

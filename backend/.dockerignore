@@ -1,0 +1,12 @@
+.git
+.gitignore
+.idea
+log/*
+tmp/*
+storage/*
+spec/*
+coverage
+.env
+.env.*
+config/master.key
+config/credentials/*.key

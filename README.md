@@ -135,8 +135,15 @@ The whole stack (PostgreSQL, Redis, API, Sidekiq, web) is Dockerized.
 
 ```bash
 # from the repository root
+cp .env.example .env                  # then fill in the three secrets below
+openssl rand -base64 32              # -> PASETO_SECRET_KEY
+openssl rand -hex 64                 # -> SECRET_KEY_BASE
+cat backend/config/master.key        # -> RAILS_MASTER_KEY
 docker compose up -d --build          # db, redis, api (migrates + seeds), sidekiq, web
 ```
+
+> `RAILS_MASTER_KEY` is required because the API image intentionally excludes
+> `config/master.key`; the key is injected at runtime instead.
 
 - API: `http://localhost:13000` · Swagger: `http://localhost:13000/api-docs` ·
   Sidekiq: `http://localhost:13000/sidekiq`

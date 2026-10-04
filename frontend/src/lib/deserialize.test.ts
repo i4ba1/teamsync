@@ -96,6 +96,44 @@ describe('deserializeCollection', () => {
   it('returns an empty array when data is absent', () => {
     expect(deserializeCollection({} as any)).toEqual([]);
   });
+
+  it('camelizes deeply nested attribute objects', () => {
+    const [team] = deserializeCollection({
+      data: [
+        {
+          id: 't1',
+          type: 'team',
+          attributes: { settings: { reminder_enabled: true, reminder_minutes_before: 30 } },
+        },
+      ],
+    } as any) as any[];
+    expect(team.settings.reminderEnabled).toBe(true);
+    expect(team.settings.reminderMinutesBefore).toBe(30);
+  });
+
+  it('resolves relationships between included resources', () => {
+    const doc = {
+      data: [
+        {
+          id: 's1',
+          type: 'standup',
+          attributes: {},
+          relationships: { standup_items: { data: [{ id: 'i1', type: 'standup_item' }] } },
+        },
+      ],
+      included: [
+        {
+          id: 'i1',
+          type: 'standup_item',
+          attributes: { content: 'Work' },
+          relationships: { user: { data: { id: 'u1', type: 'user' } } },
+        },
+        { id: 'u1', type: 'user', attributes: { full_name: 'Ada Lovelace' } },
+      ],
+    };
+    const [standup] = deserializeCollection(doc as any) as any[];
+    expect(standup.standupItems[0].user.fullName).toBe('Ada Lovelace');
+  });
 });
 
 describe('deserializeDoc', () => {
@@ -105,6 +143,16 @@ describe('deserializeDoc', () => {
       meta: { current_page: 2, total_count: 5, next_page: null },
     } as any);
     expect(result.meta).toEqual({ currentPage: 2, totalCount: 5, nextPage: null });
+  });
+
+  it('camelizes nested meta (e.g. pagination)', () => {
+    const result = deserializeDoc({
+      data: [],
+      meta: { unread_count: 3, pagination: { current_page: 1, total_count: 3 } },
+    } as any);
+    expect((result.meta as any).unreadCount).toBe(3);
+    expect((result.meta as any).pagination.currentPage).toBe(1);
+    expect((result.meta as any).pagination.totalCount).toBe(3);
   });
 
   it('deserializes a single resource', () => {
