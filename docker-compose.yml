@@ -1,0 +1,87 @@
+x-backend-environment: &backend-environment
+  RAILS_ENV: development
+  DATABASE_URL: postgres://teamsync:teamsync_password@db:5432/teamsync_development
+  REDIS_URL: redis://redis:6379/0
+  PASETO_SECRET_KEY: ${PASETO_SECRET_KEY:-teamsync-dev-secret-key-0123456789-abcdef}
+  SECRET_KEY_BASE: ${SECRET_KEY_BASE:-teamsync-dev-secret-key-base-0123456789}
+  FRONTEND_URL: http://localhost:3001
+  ACTION_CABLE_ALLOWED_REQUEST_ORIGINS: http://localhost:3001,http://localhost:3000
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: teamsync
+      POSTGRES_PASSWORD: teamsync_password
+      POSTGRES_DB: teamsync_development
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U teamsync"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    command: bash -c "bundle exec rails db:prepare && bundle exec rails db:seed && bundle exec rails server -b 0.0.0.0 -p 3000"
+    environment: *backend-environment
+    ports:
+      - "13000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  sidekiq:
+    build: ./backend
+    command: bundle exec sidekiq
+    environment: *backend-environment
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:13000
+        NEXT_PUBLIC_WS_URL: ws://localhost:13000/cable
+    ports:
+      - "3001:3001"
+    depends_on:
+      - api
+
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.42.1-jammy
+    network_mode: host
+    user: root
+    working_dir: /work/frontend
+    environment:
+      APP_URL: http://localhost:3001
+      PLAYWRIGHT_NO_SERVER: "1"
+      CI: "1"
+    volumes:
+      - ./frontend/e2e:/work/frontend/e2e
+      - ./frontend/playwright.config.ts:/work/frontend/playwright.config.ts
+      - ./frontend/tsconfig.json:/work/frontend/tsconfig.json
+      - ./docs/assets:/work/docs/assets
+    depends_on:
+      - web
+      - api
+    profiles:
+      - e2e
+
+volumes:
+  postgres_data:
