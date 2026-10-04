@@ -1,54 +1,48 @@
 module Api
   module V1
     class NotificationsController < ApplicationController
-
       def index
-        notifications = current_user.notifications
-          .includes(:team)
-          .order(created_at: :desc)
-        
-        # Filter by read status
-        if params[:unread] == "true"
-          notifications = notifications.unread
-        elsif params[:read] == "true"
-          notifications = notifications.read
-        end
-        
-        # Pagination
-        notifications = notifications.page(params[:page] || 1).per(params[:per_page] || 20)
-        
-        render json: NotificationSerializer.new(notifications).serializable_hash.merge(
+        notifications = ::Notifications::ListNotifications.call(
+          user: current_user,
+          filters: notification_filters,
+          page: params[:page],
+          per_page: params[:per_page]
+        )
+
+        render json: NotificationSerializer.new(notifications, { include: [:team] }).serializable_hash.merge(
           meta: {
-            unread_count: current_user.unread_notifications_count,
+            unread_count: NotificationRepository.unread_count(current_user),
             pagination: pagination_meta(notifications)
           }
         )
       end
 
-      # GET /api/v1/notifications/:id
       def show
-        notification = current_user.notifications.find(params[:id])
-        notification.read! unless notification.read?
-        
+        notification = ::Notifications::MarkRead.call(user: current_user, id: params[:id])
+
         render json: NotificationSerializer.new(notification).serializable_hash
       end
 
-      # PATCH /api/v1/notifications/:id
       def update
-        notification = current_user.notifications.find(params[:id])
-        
         if params[:read] == true
-          notification.read!
+          notification = ::Notifications::MarkRead.call(user: current_user, id: params[:id])
+        else
+          notification = NotificationRepository.find_for_user!(current_user, params[:id])
         end
-        
+
         render json: NotificationSerializer.new(notification).serializable_hash
       end
 
-      # POST /api/v1/notifications/mark_all_read
       def mark_all_read
-        Notification.mark_all_as_read!(current_user)
-        
+        ::Notifications::MarkAllRead.call(user: current_user)
+
         render json: { message: "All notifications marked as read", unread_count: 0 }
+      end
+
+      private
+
+      def notification_filters
+        { unread: params[:unread], read: params[:read] }
       end
     end
   end
