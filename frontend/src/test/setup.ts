@@ -25,11 +25,11 @@ global.IntersectionObserver = class IntersectionObserver {
   disconnect() {}
   observe() {}
   unobserve() {}
-};
+} as unknown as typeof global.IntersectionObserver;
 
 global.ResizeObserver = class ResizeObserver {
   constructor() {}
   disconnect() {}
   observe() {}
   unobserve() {}
-};
+} as unknown as typeof global.ResizeObserver;

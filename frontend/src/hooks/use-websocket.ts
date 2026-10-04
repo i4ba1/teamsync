@@ -33,7 +33,7 @@ export function useStandupChannel(teamSlug: string) {
         received(data: WebSocketPayload) {
           handleReceivedData(data);
         },
-      }
+      } as unknown as never,
     );
 
     function handleReceivedData(data: WebSocketPayload) {
@@ -106,7 +106,7 @@ export function useNotificationChannel() {
         received(data: WebSocketPayload) {
           handleReceivedData(data);
         },
-      }
+      } as unknown as never,
     );
 
     function handleReceivedData(data: WebSocketPayload) {
@@ -176,7 +176,7 @@ export function usePresenceChannel(teamSlug: string) {
         received(data: WebSocketPayload) {
           console.log('Presence update:', data);
         },
-      }
+      } as unknown as never,
     );
 
     return () => {
