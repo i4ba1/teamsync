@@ -24,6 +24,18 @@ export function keyFor(type: string, id: string): string {
   return `${type}:${id}`;
 }
 
+export function underscore(key: string): string {
+  return key.replace(/[A-Z]/g, (char: string) => `_${char.toLowerCase()}`);
+}
+
+export function underscoreKeys(attributes: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(attributes)) {
+    result[underscore(key)] = value;
+  }
+  return result;
+}
+
 function camelizeAttributes(attributes?: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(attributes ?? {})) {

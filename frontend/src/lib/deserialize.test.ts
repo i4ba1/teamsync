@@ -5,6 +5,8 @@ import {
   deserializeDoc,
   deserializeResource,
   keyFor,
+  underscore,
+  underscoreKeys,
 } from './deserialize';
 
 describe('camelize', () => {
@@ -19,6 +21,20 @@ describe('camelize', () => {
 describe('keyFor', () => {
   it('builds a type:id key', () => {
     expect(keyFor('user', 'u1')).toBe('user:u1');
+  });
+});
+
+describe('underscore', () => {
+  it('converts camelCase keys to snake_case', () => {
+    expect(underscore('standupTime')).toBe('standup_time');
+    expect(underscore('name')).toBe('name');
+  });
+
+  it('converts top-level object keys for request payloads', () => {
+    expect(underscoreKeys({ firstName: 'Ada', standupDays: [1, 2] })).toEqual({
+      first_name: 'Ada',
+      standup_days: [1, 2],
+    });
   });
 });
 
