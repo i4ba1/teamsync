@@ -47,6 +47,9 @@ services:
     build: ./backend
     command: bundle exec sidekiq
     environment: *backend-environment
+    # Inherits the image's HTTP healthcheck, which does not apply to a worker.
+    healthcheck:
+      disable: true
     depends_on:
       db:
         condition: service_healthy
