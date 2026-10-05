@@ -49,26 +49,26 @@ class PresenceChannel < ApplicationCable::Channel
   private
 
   def set_online_status(online)
-    Redis.current.hset(presence_key, current_user.id, {
+    TEAMSYNC_REDIS.hset(presence_key, current_user.id, {
       user_id: current_user.id,
       full_name: current_user.full_name,
       online: online,
       last_seen: Time.current.iso8601
     }.to_json)
-    
+
     # Set expiration for offline users
     unless online
-      Redis.current.hdel(presence_key, current_user.id)
+      TEAMSYNC_REDIS.hdel(presence_key, current_user.id)
     end
   end
 
   def update_last_seen
-    data = Redis.current.hget(presence_key, current_user.id)
+    data = TEAMSYNC_REDIS.hget(presence_key, current_user.id)
     return unless data
 
     parsed = JSON.parse(data)
     parsed["last_seen"] = Time.current.iso8601
-    Redis.current.hset(presence_key, current_user.id, parsed.to_json)
+    TEAMSYNC_REDIS.hset(presence_key, current_user.id, parsed.to_json)
   end
 
   def broadcast_user_status(status)
@@ -83,7 +83,7 @@ class PresenceChannel < ApplicationCable::Channel
   end
 
   def online_users
-    users_data = Redis.current.hgetall(presence_key)
+    users_data = TEAMSYNC_REDIS.hgetall(presence_key)
     users_data.values.map { |data| JSON.parse(data) }.select { |u| u["online"] }
   end
 

@@ -3,27 +3,36 @@ module Api
     class BaseController < ApplicationController
       private
 
+      def load_team!
+        @team ||= TeamRepository.find_by_slug!(team_slug_param)
+      end
+
+      # Nested routes use :team_slug, collection/member routes use :slug.
+      def team_slug_param
+        params[:team_slug] || params[:slug] || params[:team_id] || params[:id]
+      end
+
       def require_team_membership!
-        @team = Team.find_by!(slug: params[:team_id] || params[:id])
-        
+        load_team!
+
         unless current_user.member_of?(@team)
-          render json: { error: "Forbidden", message: "You are not a member of this team" }, status: :forbidden
+          raise Errors::ForbiddenError, "You are not a member of this team"
         end
       end
 
       def require_team_admin!
-        @team = Team.find_by!(slug: params[:team_id] || params[:id])
-        
+        load_team!
+
         unless current_user.admin_of?(@team)
-          render json: { error: "Forbidden", message: "Admin access required" }, status: :forbidden
+          raise Errors::ForbiddenError, "Admin access required"
         end
       end
 
       def require_team_owner!
-        @team = Team.find_by!(slug: params[:team_id] || params[:id])
-        
+        load_team!
+
         unless current_user.owner_of?(@team)
-          render json: { error: "Forbidden", message: "Owner access required" }, status: :forbidden
+          raise Errors::ForbiddenError, "Owner access required"
         end
       end
     end

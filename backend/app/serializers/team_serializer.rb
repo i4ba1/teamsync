@@ -12,7 +12,8 @@ class TeamSerializer
   end
 
   attribute :current_user_role do |object, params|
-    params[:current_user]&.member_role(object)
+    current_user = params[:current_user]
+    object.member_role(current_user) if current_user
   end
 
   attribute :today_stats do |object|

@@ -9,22 +9,17 @@ module Api
         end
 
         def update
-          if current_user.update(user_params)
-            render json: {
-              data: UserSerializer.new(current_user).serializable_hash[:data][:attributes]
-            }
-          else
-            render json: { 
-              error: "Validation failed", 
-              details: current_user.errors.full_messages 
-            }, status: :unprocessable_entity
-          end
+          user = ::Auth::UpdateProfile.call(user: current_user, attributes: user_params)
+
+          render json: {
+            data: UserSerializer.new(user).serializable_hash[:data][:attributes]
+          }
         end
 
         private
 
         def user_params
-          params.require(:user).permit(:first_name, :last_name, :timezone, :avatar_url)
+          params.require(:user).permit(:first_name, :last_name, :timezone, :avatar_url).to_h.symbolize_keys
         end
       end
     end

@@ -1,112 +1,58 @@
 module Api
   module V1
     class TeamsController < BaseController
-      before_action :require_team_membership!, only: [:show, :update, :destroy, :invite, :join]
+      before_action :require_team_membership!, only: [:show, :update, :destroy, :invite]
       before_action :require_team_admin!, only: [:update, :invite]
       before_action :require_team_owner!, only: [:destroy]
+      # Non-members may join via an invite code, so only load the team.
+      before_action :load_team!, only: [:join]
 
-      # GET /api/v1/teams
       def index
-        teams = current_user.teams.includes(:team_memberships, :created_by)
-        
+        teams = ::Teams::ListUserTeams.call(user: current_user)
+
         render json: TeamSerializer.new(teams, { params: { current_user: current_user } }).serializable_hash
       end
 
-      # GET /api/v1/teams/:slug
       def show
-        render json: TeamSerializer.new(@team, { 
+        render json: TeamSerializer.new(@team, {
           params: { current_user: current_user },
           include: [:members]
         }).serializable_hash
       end
 
-      # POST /api/v1/teams
       def create
-        team = current_user.owned_teams.build(team_params)
-        team.created_by = current_user
+        team = ::Teams::CreateTeam.call(user: current_user, attributes: team_params)
 
-        if team.save
-          render json: TeamSerializer.new(team).serializable_hash, status: :created
-        else
-          render json: { error: team.errors.full_messages }, status: :unprocessable_entity
-        end
+        render json: TeamSerializer.new(team).serializable_hash, status: :created
       end
 
-      # PUT /api/v1/teams/:slug
       def update
-        if @team.update(team_params)
-          render json: TeamSerializer.new(@team).serializable_hash
-        else
-          render json: { error: @team.errors.full_messages }, status: :unprocessable_entity
-        end
+        team = ::Teams::UpdateTeam.call(team: @team, attributes: team_params)
+
+        render json: TeamSerializer.new(team).serializable_hash
       end
 
-      # DELETE /api/v1/teams/:slug
       def destroy
-        @team.destroy!
+        ::Teams::DeleteTeam.call(team: @team)
         head :no_content
       end
 
-      # POST /api/v1/teams/:slug/invite
       def invite
-        user = User.find_by(email: params[:email]&.downcase)
-        
-        if user.nil?
-          # TODO: Send invitation email for new user
-          render json: { error: "User not found" }, status: :not_found
-          return
-        end
+        ::Teams::InviteMember.call(team: @team, email: params[:email], role: params[:role])
 
-        if user.member_of?(@team)
-          render json: { error: "User is already a member of this team" }, status: :unprocessable_entity
-          return
-        end
-
-        membership = @team.team_memberships.create(
-          user: user,
-          role: params[:role] || :member,
-          joined_at: Time.current
-        )
-
-        if membership.persisted?
-          render json: { message: "Invitation sent successfully" }, status: :created
-        else
-          render json: { error: membership.errors.full_messages }, status: :unprocessable_entity
-        end
+        render json: { message: "Invitation sent successfully" }, status: :created
       end
 
-      # POST /api/v1/teams/:slug/join
       def join
-        if params[:invite_code].present?
-          unless @team.invite_code_valid? && @team.invite_code == params[:invite_code].upcase
-            render json: { error: "Invalid or expired invite code" }, status: :unprocessable_entity
-            return
-          end
-        end
+        team = ::Teams::JoinTeam.call(team: @team, user: current_user, invite_code: params[:invite_code])
 
-        if current_user.member_of?(@team)
-          render json: { error: "You are already a member of this team" }, status: :unprocessable_entity
-          return
-        end
-
-        membership = @team.team_memberships.create(
-          user: current_user,
-          role: :member,
-          joined_at: Time.current
-        )
-
-        if membership.persisted?
-          @team.clear_invite_code! if params[:invite_code].present?
-          render json: TeamSerializer.new(@team).serializable_hash, status: :created
-        else
-          render json: { error: membership.errors.full_messages }, status: :unprocessable_entity
-        end
+        render json: TeamSerializer.new(team).serializable_hash, status: :created
       end
 
       private
 
       def team_params
-        params.require(:team).permit(:name, :timezone, :standup_time, standup_days: [])
+        params.require(:team).permit(:name, :timezone, :standup_time, standup_days: []).to_h.symbolize_keys
       end
     end
   end

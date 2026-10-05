@@ -5,55 +5,40 @@ module Api
         skip_before_action :authenticate_user!, only: [:create, :refresh]
 
         def create
-          user = User.active.find_by(email: params[:email]&.downcase)
+          result = ::Auth::AuthenticateUser.call(attributes: login_params, device_info: device_info)
+          user = result[:user]
+          tokens = result[:tokens]
 
-          if user&.authenticate(params[:password])
-            tokens = PasetoService.generate_tokens(user, device_info: device_info)
-            
-            render json: {
-              data: UserSerializer.new(user).serializable_hash[:data][:attributes].merge(
-                token: tokens[:access_token],
-                refresh_token: tokens[:refresh_token],
-                expires_in: tokens[:expires_in]
-              )
-            }
-          else
-            render json: { error: "Invalid email or password" }, status: :unauthorized
-          end
+          render json: {
+            data: UserSerializer.new(user).serializable_hash[:data][:attributes].merge(
+              token: tokens[:access_token],
+              refresh_token: tokens[:refresh_token],
+              expires_in: tokens[:expires_in]
+            )
+          }
         end
 
         def destroy
           refresh_token = params[:refresh_token] || extract_refresh_token_from_header
-          
-          if refresh_token.present?
-            PasetoService.revoke_refresh_token(refresh_token)
-          end
-          
+          ::Auth::RevokeSession.call(refresh_token: refresh_token)
           head :no_content
         end
 
         def refresh
-          refresh_token = params[:refresh_token]
-          
-          if refresh_token.blank?
-            render json: { error: "Refresh token is required" }, status: :bad_request
-            return
-          end
+          tokens = ::Auth::RefreshSession.call(refresh_token: params[:refresh_token])
 
-          tokens = PasetoService.refresh_access_token(refresh_token)
-          
-          if tokens
-            render json: {
-              token: tokens[:access_token],
-              refresh_token: tokens[:refresh_token],
-              expires_in: tokens[:expires_in]
-            }
-          else
-            render json: { error: "Invalid or expired refresh token" }, status: :unauthorized
-          end
+          render json: {
+            token: tokens[:access_token],
+            refresh_token: tokens[:refresh_token],
+            expires_in: tokens[:expires_in]
+          }
         end
 
         private
+
+        def login_params
+          { email: params[:email], password: params[:password] }
+        end
 
         def device_info
           request.user_agent

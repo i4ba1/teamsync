@@ -41,7 +41,7 @@ RSpec.describe Team, type: :model do
         team = create(:team, created_by: user)
         
         expect(team.members).to include(user)
-        expect(team.team_memberships.find_by(user: user)).to be_owner
+        expect(team.team_memberships.find_by(user: user)).to be_role_owner
       end
     end
   end

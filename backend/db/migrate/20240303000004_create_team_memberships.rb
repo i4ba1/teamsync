@@ -10,6 +10,5 @@ class CreateTeamMemberships < ActiveRecord::Migration[7.1]
     end
 
     add_index :team_memberships, [:team_id, :user_id], unique: true
-    add_index :team_memberships, :user_id
   end
 end

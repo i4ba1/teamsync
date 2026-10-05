@@ -5,6 +5,10 @@ Rails.application.routes.draw do
   get "/health", to: proc { [200, {}, ["OK"]] }
   get "/up", to: proc { [200, {}, ["OK"]] }
 
+  # API documentation (Swagger UI)
+  mount Rswag::Ui::Engine => "/api-docs"
+  mount Rswag::Api::Engine => "/api-docs"
+
   # Action Cable
   mount ActionCable.server => "/cable"
 

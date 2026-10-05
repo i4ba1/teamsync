@@ -43,30 +43,7 @@ class Standup < ApplicationRecord
   end
 
   # Instance methods
-  def submit!(items_params)
-    transaction do
-      update_items(items_params)
-      update!(status: :submitted, completed_at: Time.current)
-    end
-  end
-
-  def update_items(items_params)
-    return unless items_params.present?
-
-    items_params.each do |item_data|
-      item_type = item_data[:item_type] || item_data["item_type"]
-      content = item_data[:content] || item_data["content"]
-      sort_order = item_data[:order] || item_data["order"] || 0
-
-      next if item_type.blank?
-
-      item = standup_items.find_or_initialize_by(item_type: item_type)
-      item.content = content || ""
-      item.sort_order = sort_order
-      item.save!
-    end
-  end
-
+  # Submission and item management are handled by Standups::UpsertStandup.
   def items_by_type
     standup_items.order(:sort_order).group_by(&:item_type)
   end
@@ -88,7 +65,7 @@ class Standup < ApplicationRecord
   end
 
   def editable?
-    draft? || (submitted? && standup_date >= 7.days.ago.to_date)
+    status_draft? || (status_submitted? && standup_date >= 7.days.ago.to_date)
   end
 
   def to_summary
@@ -130,7 +107,7 @@ class Standup < ApplicationRecord
   end
 
   def notify_standup_created
-    return unless submitted?
+    return unless status_submitted?
 
     team.members.where.not(id: user.id).find_each do |member|
       Notification.create_standup_submitted(member, self)

@@ -14,7 +14,7 @@ class Team < ApplicationRecord
   # Validations
   validates :name, presence: true, length: { maximum: 100 }
   validates :slug, presence: true, uniqueness: { case_sensitive: false }, format: { with: /\A[a-z0-9-]+\z/ }
-  validates :timezone, presence: true, inclusion: { in: ActiveSupport::TimeZone.all.map(&:name) }
+  validates :timezone, presence: true, inclusion: { in: TZInfo::Timezone.all_identifiers }
   validates :standup_days, presence: true
   validate :valid_standup_days
 
@@ -64,10 +64,6 @@ class Team < ApplicationRecord
 
   def today_missed_count
     today_standups.where(status: :missed).count
-  end
-
-  def pending_members_count
-    team_memberships.where(role: :pending).count
   end
 
   def generate_invite_code!(expires_in: 7.days)

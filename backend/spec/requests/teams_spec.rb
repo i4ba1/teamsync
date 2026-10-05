@@ -3,12 +3,8 @@ require 'rails_helper'
 RSpec.describe "Teams", type: :request do
   let!(:user) { create(:user) }
   let!(:other_user) { create(:user) }
+  # Creating the team adds the creator as owner (Team#add_creator_as_owner).
   let!(:team) { create(:team, created_by: user) }
-
-  before do
-    # Ensure user is a member of the team
-    create(:team_membership, :owner, user: user, team: team)
-  end
 
   describe "GET /api/v1/teams" do
     it "returns user's teams" do
@@ -67,7 +63,7 @@ RSpec.describe "Teams", type: :request do
       
       new_team = Team.last
       expect(new_team.members).to include(user)
-      expect(new_team.team_memberships.find_by(user: user)).to be_owner
+      expect(new_team.team_memberships.find_by(user: user)).to be_role_owner
     end
   end
 
@@ -130,7 +126,7 @@ RSpec.describe "Teams", type: :request do
            params: { email: new_member.email },
            headers: auth_headers(user)
       
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(422)
     end
   end
 
@@ -154,7 +150,7 @@ RSpec.describe "Teams", type: :request do
            params: { invite_code: "INVALID" },
            headers: auth_headers(other_user)
       
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(422)
     end
   end
 end

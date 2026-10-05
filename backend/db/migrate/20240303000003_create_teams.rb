@@ -14,7 +14,6 @@ class CreateTeams < ActiveRecord::Migration[7.1]
     end
 
     add_index :teams, :slug, unique: true
-    add_index :teams, :created_by_id
     add_index :teams, :deleted_at
   end
 end

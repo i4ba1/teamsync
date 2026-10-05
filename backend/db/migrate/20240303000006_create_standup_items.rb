@@ -9,7 +9,6 @@ class CreateStandupItems < ActiveRecord::Migration[7.1]
       t.timestamps
     end
 
-    add_index :standup_items, :standup_id
     add_index :standup_items, [:standup_id, :item_type]
   end
 end

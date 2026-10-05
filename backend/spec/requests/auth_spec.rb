@@ -28,7 +28,7 @@ RSpec.describe "Authentication", type: :request do
     it "returns validation errors for invalid data" do
       post "/api/v1/auth/signup", params: { user: { email: "invalid" } }
       
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(422)
       expect(json_body[:error]).to eq("Validation failed")
     end
 
@@ -36,7 +36,7 @@ RSpec.describe "Authentication", type: :request do
       create(:user, email: "newuser@example.com")
       post "/api/v1/auth/signup", params: valid_params
       
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(422)
     end
   end
 

@@ -104,7 +104,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_03_03_000009) do
 
   create_table "users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "email", null: false
-    t.string "encrypted_password", null: false
+    t.string "password_digest", null: false
     t.string "first_name", null: false
     t.string "last_name", null: false
     t.string "timezone", default: "UTC", null: false

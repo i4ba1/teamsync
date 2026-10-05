@@ -10,7 +10,8 @@ class Notification < ApplicationRecord
     team_invite: 2,
     standup_submitted: 3,
     team_removed: 4,
-    role_changed: 5
+    role_changed: 5,
+    standup_summary: 6
   }, _prefix: true
 
   # Validations
@@ -29,7 +30,7 @@ class Notification < ApplicationRecord
 
   # Class methods
   def self.create_standup_reminder(user, team)
-    return unless user.active?
+    return unless user.status_active?
 
     create!(
       user: user,

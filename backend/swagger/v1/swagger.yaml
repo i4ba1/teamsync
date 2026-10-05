@@ -1,0 +1,1153 @@
+openapi: 3.0.3
+info:
+  title: TeamSync API
+  description: |
+    TeamSync is a real-time asynchronous standup tool for remote teams.
+    This API provides endpoints for authentication, team management, standup submissions, and real-time updates via WebSockets.
+  version: 1.0.0
+  contact:
+    name: TeamSync Support
+    email: support@teamsync.app
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+  - url: https://api.teamsync.app/api/v1
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User registration, login, and session management
+  - name: Teams
+    description: Team creation, management, and membership
+  - name: Standups
+    description: Daily standup submissions and history
+  - name: Notifications
+    description: User notifications and preferences
+
+paths:
+  /auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Create a new user account with email, password, and profile information
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user
+              properties:
+                user:
+                  $ref: '#/components/schemas/SignupInput'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate user
+      description: Login with email and password to receive access and refresh tokens
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    delete:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Revoke the current refresh token
+      operationId: logout
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Logout successful
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Retrieve the currently authenticated user's profile
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+    put:
+      tags:
+        - Authentication
+      summary: Update profile
+      description: Update the current user's profile information
+      operationId: updateProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/UpdateUserInput'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Use refresh token to obtain a new access token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  expires_in:
+                    type: integer
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /teams:
+    get:
+      tags:
+        - Teams
+      summary: List teams
+      description: Get all teams the current user is a member of
+      operationId: listTeams
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of teams
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Team'
+    post:
+      tags:
+        - Teams
+      summary: Create team
+      description: Create a new team with the current user as owner
+      operationId: createTeam
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - team
+              properties:
+                team:
+                  $ref: '#/components/schemas/CreateTeamInput'
+      responses:
+        '201':
+          description: Team created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Team'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /teams/{slug}:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Teams
+      summary: Get team
+      description: Get detailed information about a specific team
+      operationId: getTeam
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Team details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Team'
+        '404':
+          description: Team not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Teams
+      summary: Update team
+      description: Update team settings (admin only)
+      operationId: updateTeam
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                team:
+                  $ref: '#/components/schemas/UpdateTeamInput'
+      responses:
+        '200':
+          description: Team updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Team'
+        '403':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Teams
+      summary: Delete team
+      description: Delete a team (owner only)
+      operationId: deleteTeam
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Team deleted
+        '403':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /teams/{slug}/invite:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - Teams
+      summary: Invite member
+      description: Invite a user to join the team by email (admin only)
+      operationId: inviteMember
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                  enum: [member, admin]
+                  default: member
+      responses:
+        '201':
+          description: Invitation sent
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /teams/{slug}/join:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - Teams
+      summary: Join team
+      description: Join a team using an invite code
+      operationId: joinTeam
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invite_code:
+                  type: string
+      responses:
+        '201':
+          description: Joined team successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Team'
+        '422':
+          description: Invalid invite code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /teams/{team_id}/members:
+    parameters:
+      - name: team_id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Teams
+      summary: List members
+      description: Get all members of a team
+      operationId: listMembers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of members
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TeamMembership'
+
+  /teams/{team_id}/members/{id}:
+    parameters:
+      - name: team_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      tags:
+        - Teams
+      summary: Remove member
+      description: Remove a member from the team (admin only)
+      operationId: removeMember
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Member removed
+        '403':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /teams/{team_id}/members/{id}/update_role:
+    parameters:
+      - name: team_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags:
+        - Teams
+      summary: Update member role
+      description: Change a member's role (admin only)
+      operationId: updateMemberRole
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+              properties:
+                role:
+                  type: string
+                  enum: [owner, admin, member]
+      responses:
+        '200':
+          description: Role updated
+        '403':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /teams/{team_id}/standups:
+    parameters:
+      - name: team_id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Standups
+      summary: List standups
+      description: Get standups for a team with optional filters
+      operationId: listStandups
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: user_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, submitted, missed, vacation, holiday]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of standups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Standup'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+    post:
+      tags:
+        - Standups
+      summary: Create standup
+      description: Create a new standup for today
+      operationId: createStandup
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - items
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/StandupItemInput'
+                submit:
+                  type: boolean
+                  default: false
+      responses:
+        '201':
+          description: Standup created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Standup'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /teams/{team_id}/standups/today:
+    parameters:
+      - name: team_id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Standups
+      summary: Get today's standup
+      description: Get or initialize the current user's standup for today
+      operationId: getTodayStandup
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Today's standup
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Standup'
+
+  /teams/{team_id}/standups/{id}:
+    parameters:
+      - name: team_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Standups
+      summary: Get standup
+      description: Get a specific standup by ID
+      operationId: getStandup
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Standup details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Standup'
+    put:
+      tags:
+        - Standups
+      summary: Update standup
+      description: Update a standup (owner only)
+      operationId: updateStandup
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/StandupItemInput'
+                submit:
+                  type: boolean
+      responses:
+        '200':
+          description: Standup updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Standup'
+    delete:
+      tags:
+        - Standups
+      summary: Delete standup
+      description: Delete a standup (owner only)
+      operationId: deleteStandup
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Standup deleted
+
+  /notifications:
+    get:
+      tags:
+        - Notifications
+      summary: List notifications
+      description: Get notifications for the current user
+      operationId: listNotifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: unread
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  meta:
+                    type: object
+                    properties:
+                      unread_count:
+                        type: integer
+                      pagination:
+                        $ref: '#/components/schemas/PaginationMeta'
+
+  /notifications/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Notifications
+      summary: Get notification
+      description: Get a specific notification
+      operationId: getNotification
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notification details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Notification'
+    patch:
+      tags:
+        - Notifications
+      summary: Mark as read
+      description: Mark a notification as read
+      operationId: markNotificationRead
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                read:
+                  type: boolean
+      responses:
+        '200':
+          description: Notification updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Notification'
+
+  /notifications/mark_all_read:
+    post:
+      tags:
+        - Notifications
+      summary: Mark all as read
+      description: Mark all notifications as read
+      operationId: markAllNotificationsRead
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  unread_count:
+                    type: integer
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: PASETO
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        full_name:
+          type: string
+        initials:
+          type: string
+        timezone:
+          type: string
+        avatar_url:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+        role:
+          type: string
+          enum: [member, admin, super_admin]
+        created_at:
+          type: string
+          format: date-time
+
+    SignupInput:
+      type: object
+      required:
+        - email
+        - password
+        - first_name
+        - last_name
+        - timezone
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        first_name:
+          type: string
+          maxLength: 50
+        last_name:
+          type: string
+          maxLength: 50
+        timezone:
+          type: string
+
+    LoginInput:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        remember_me:
+          type: boolean
+          default: false
+
+    UpdateUserInput:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 50
+        last_name:
+          type: string
+          maxLength: 50
+        timezone:
+          type: string
+        avatar_url:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/User'
+            - type: object
+              properties:
+                token:
+                  type: string
+                refresh_token:
+                  type: string
+                expires_in:
+                  type: integer
+
+    Team:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        timezone:
+          type: string
+        standup_time:
+          type: string
+        standup_days:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 6
+        settings:
+          type: object
+        member_count:
+          type: integer
+        current_user_role:
+          type: string
+          enum: [owner, admin, member]
+        today_stats:
+          type: object
+          properties:
+            submitted:
+              type: integer
+            missed:
+              type: integer
+            total:
+              type: integer
+        invite_code:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        created_by:
+          $ref: '#/components/schemas/User'
+
+    CreateTeamInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        timezone:
+          type: string
+        standup_time:
+          type: string
+        standup_days:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 6
+
+    UpdateTeamInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        timezone:
+          type: string
+        standup_time:
+          type: string
+        standup_days:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 6
+
+    TeamMembership:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [owner, admin, member]
+        joined_at:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/User'
+        team:
+          $ref: '#/components/schemas/Team'
+
+    Standup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        standup_date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [draft, submitted, missed, vacation, holiday]
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        editable:
+          type: boolean
+        items_summary:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        user:
+          $ref: '#/components/schemas/User'
+        team:
+          $ref: '#/components/schemas/Team'
+        standup_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StandupItem'
+        created_at:
+          type: string
+          format: date-time
+
+    StandupItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        item_type:
+          type: string
+          enum: [yesterday, today, blockers, notes]
+        content:
+          type: string
+        sort_order:
+          type: integer
+
+    StandupItemInput:
+      type: object
+      properties:
+        item_type:
+          type: string
+          enum: [yesterday, today, blockers, notes]
+        content:
+          type: string
+        order:
+          type: integer
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        notification_type:
+          type: string
+          enum: [standup_reminder, mention, team_invite, standup_submitted, team_removed, role_changed]
+        title:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+        read:
+          type: boolean
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        team:
+          $ref: '#/components/schemas/Team'
+        created_at:
+          type: string
+          format: date-time
+
+    PaginationMeta:
+      type: object
+      properties:
+        current_page:
+          type: integer
+        next_page:
+          type: integer
+          nullable: true
+        prev_page:
+          type: integer
+          nullable: true
+        total_pages:
+          type: integer
+        total_count:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string

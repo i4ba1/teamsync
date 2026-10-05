@@ -7,18 +7,23 @@ class ApplicationController < ActionController::API
   rescue_from ActiveRecord::RecordInvalid, with: :unprocessable_entity
   rescue_from ActionController::ParameterMissing, with: :bad_request
 
+  rescue_from Errors::NotFoundError, with: :handle_not_found
+  rescue_from Errors::ForbiddenError, with: :handle_forbidden
+  rescue_from Errors::UnauthorizedError, with: :handle_unauthorized
+  rescue_from Errors::ValidationError, with: :handle_validation
+
   private
 
   def authenticate_user!
     payload = extract_payload_from_token
-    
+
     if payload.nil?
       render json: { error: "Unauthorized", message: "Invalid or missing authentication token" }, status: :unauthorized
       return
     end
-    
-    @current_user = User.active.find_by(id: payload["user_id"])
-    
+
+    @current_user = UserRepository.active_find(payload["user_id"])
+
     if @current_user.nil?
       render json: { error: "Unauthorized", message: "User not found or inactive" }, status: :unauthorized
     end
@@ -42,15 +47,31 @@ class ApplicationController < ActionController::API
   end
 
   def unprocessable_entity(exception)
-    render json: { 
-      error: "Unprocessable Entity", 
+    render json: {
+      error: "Unprocessable Entity",
       message: exception.message,
-      details: exception.record&.errors&.full_messages 
-    }, status: :unprocessable_entity
+      details: exception.record&.errors&.full_messages
+    }, status: 422
   end
 
   def bad_request(exception)
     render json: { error: "Bad Request", message: exception.message }, status: :bad_request
+  end
+
+  def handle_not_found(exception)
+    render json: { error: "Not Found", message: exception.message }, status: :not_found
+  end
+
+  def handle_forbidden(exception)
+    render json: { error: "Forbidden", message: exception.message }, status: :forbidden
+  end
+
+  def handle_unauthorized(exception)
+    render json: { error: exception.message }, status: :unauthorized
+  end
+
+  def handle_validation(exception)
+    render json: { error: exception.message, details: exception.details }.compact, status: 422
   end
 
   def render_json(data, status: :ok, serializer: nil, options: {})
@@ -61,7 +82,7 @@ class ApplicationController < ActionController::API
     end
   end
 
-  def render_error(message, status: :unprocessable_entity, details: nil)
+  def render_error(message, status: 422, details: nil)
     response = { error: message }
     response[:details] = details if details.present?
     render json: response, status: status

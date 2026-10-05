@@ -28,7 +28,7 @@ class User < ApplicationRecord
   validates :email, presence: true, uniqueness: { case_sensitive: false }, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :first_name, presence: true, length: { maximum: 50 }
   validates :last_name, presence: true, length: { maximum: 50 }
-  validates :timezone, presence: true, inclusion: { in: ActiveSupport::TimeZone.all.map(&:name) }
+  validates :timezone, presence: true, inclusion: { in: TZInfo::Timezone.all_identifiers }
   validates :password, length: { minimum: 8 }, if: :password_required?
 
   # Scopes

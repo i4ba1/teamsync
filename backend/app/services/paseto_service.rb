@@ -1,13 +1,13 @@
 require "paseto"
 
 class PasetoService
-  TOKEN_VERSION = "v4"
+  TOKEN_VERSION = "v2"
   PURPOSE = "public"
   ACCESS_TOKEN_LIFETIME = 15.minutes
-  
+
   class << self
     def generate_keypair
-      Paseto::V4::AsymmetricKey.generate
+      Paseto::V2::Public::SecretKey.generate
     end
     
     def secret_key
@@ -32,7 +32,7 @@ class PasetoService
         "token_type" => "access"
       }
       
-      secret_key.sign(token_payload.to_json, footer: footer)
+      secret_key.sign(token_payload.to_json, footer)
     rescue => e
       Rails.logger.error("PASETO encode error: #{e.message}")
       nil
@@ -41,10 +41,10 @@ class PasetoService
     def decode(token)
       return nil if token.blank?
       
-      result = public_key.verify(token, footer: footer)
-      return nil if result.nil?
+      message = public_key.verify(token, footer)
+      return nil if message.nil?
       
-      payload = JSON.parse(result.message)
+      payload = JSON.parse(message)
       
       # Check expiration
       exp = Time.parse(payload["exp"]) rescue nil
@@ -53,7 +53,7 @@ class PasetoService
       end
       
       payload["data"]
-    rescue Paseto::InvalidSignature, Paseto::ParseError => e
+    rescue Paseto::Error => e
       Rails.logger.warn("PASETO decode error: #{e.message}")
       nil
     rescue => e
@@ -91,7 +91,7 @@ class PasetoService
       return nil unless refresh_token.active?
       
       user = refresh_token.user
-      return nil unless user&.active?
+      return nil unless user&.status_active?
       
       # Rotate refresh token (security best practice)
       refresh_token.revoke!
@@ -125,9 +125,9 @@ class PasetoService
         raise "PASETO_SECRET_KEY environment variable or paseto_secret_key credential must be set"
       end
       
-      # Use the secret to derive a key
+      # Derive a stable 32-byte Ed25519 seed from the configured secret.
       seed = Digest::SHA256.digest(secret)
-      Paseto::V4::AsymmetricKey.new(seed)
+      Paseto::V2::Public::SecretKey.new(seed)
     end
     
     def footer
