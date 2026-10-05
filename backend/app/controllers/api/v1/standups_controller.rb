@@ -21,7 +21,7 @@ module Api
       def today
         standup = ::Standups::FindOrInitializeToday.call(team: @team, user: current_user)
 
-        render json: StandupSerializer.new(standup, { include: [:standup_items] }).serializable_hash
+        render json: StandupSerializer.new(standup, { include: [:user, :standup_items] }).serializable_hash
       end
 
       def show

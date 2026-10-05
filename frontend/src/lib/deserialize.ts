@@ -62,12 +62,12 @@ function buildIncludedMap(included: JsonApiResource[] = []): Map<string, unknown
 
   // Two passes so relationships between included resources also resolve.
   const map = new Map<string, unknown>();
-  for (const [key, resource] of raw) {
+  raw.forEach((resource, key) => {
     map.set(key, { id: resource.id, ...camelizeAttributes(resource.attributes) });
-  }
-  for (const [key, resource] of raw) {
+  });
+  raw.forEach((resource, key) => {
     map.set(key, deserializeResource(resource, map));
-  }
+  });
   return map;
 }
 
@@ -102,7 +102,8 @@ export function deserializeResource(
 
 export function deserializeCollection(doc: JsonApiDoc<JsonApiResource[]>): Record<string, unknown>[] {
   const map = buildIncludedMap(doc.included);
-  return (doc.data ?? []).map((resource) => deserializeResource(resource, map));
+  const resources = Array.isArray(doc.data) ? doc.data : [];
+  return resources.map((resource) => deserializeResource(resource, map));
 }
 
 function camelizeMeta(meta?: Record<string, unknown>): Record<string, unknown> | undefined {
@@ -120,8 +121,7 @@ export function deserializeDoc(
   }
 
   if (doc.data) {
-    const map = buildIncludedMap(doc.included);
-    return { data: deserializeResource(doc.data as JsonApiResource, map), meta };
+    return { data: deserializeResource(doc.data as JsonApiResource, buildIncludedMap(doc.included)), meta };
   }
 
   return { data: null, meta };

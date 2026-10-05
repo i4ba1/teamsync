@@ -62,7 +62,13 @@ services:
     ports:
       - "3001:3001"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   e2e:
     image: mcr.microsoft.com/playwright:v1.42.1-jammy
@@ -84,8 +90,10 @@ services:
       - ./docs/assets:/work/output
       - ./.playwright-output:/work/test-results
     depends_on:
-      - web
-      - api
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
     profiles:
       - e2e
 

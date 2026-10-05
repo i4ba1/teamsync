@@ -15,10 +15,9 @@ RUN apt-get update -qq && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Install gems
+# Install gems (all groups: the compose stack runs RAILS_ENV=development)
 COPY Gemfile Gemfile.lock ./
 RUN bundle config set --local deployment 'false' && \
-    bundle config set --local without 'development test' && \
     bundle install --jobs 4 --retry 3
 
 # Copy application code

@@ -23,13 +23,13 @@ module Api
       def create
         team = ::Teams::CreateTeam.call(user: current_user, attributes: team_params)
 
-        render json: TeamSerializer.new(team).serializable_hash, status: :created
+        render json: TeamSerializer.new(team, { params: { current_user: current_user } }).serializable_hash, status: :created
       end
 
       def update
         team = ::Teams::UpdateTeam.call(team: @team, attributes: team_params)
 
-        render json: TeamSerializer.new(team).serializable_hash
+        render json: TeamSerializer.new(team, { params: { current_user: current_user } }).serializable_hash
       end
 
       def destroy
@@ -46,7 +46,7 @@ module Api
       def join
         team = ::Teams::JoinTeam.call(team: @team, user: current_user, invite_code: params[:invite_code])
 
-        render json: TeamSerializer.new(team).serializable_hash, status: :created
+        render json: TeamSerializer.new(team, { params: { current_user: current_user } }).serializable_hash, status: :created
       end
 
       private
